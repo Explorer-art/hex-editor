@@ -32,10 +32,10 @@ int main(int argc, char* argv[]) {
 
 	for (size_t i = 0; i < size; i++) {
 		if (i % MAX_COLUMNS == 0) {
-			printf("%08x: ", i + MAX_COLUMNS);
+			printf("%08X: ", i + MAX_COLUMNS);
 		}
 
-		printf("%02x ", *data_ptr);
+		printf("%02X ", *data_ptr);
 		data_ptr++;
 
 		if (i % MAX_COLUMNS == MAX_COLUMNS - 1) {
