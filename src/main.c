@@ -50,8 +50,8 @@ int main(int argc, char* argv[]) {
 
 	int start_line = 0;
 	int x, y;
-	int select_x = 11;
-	int select_y = 0;
+	int cursor_x = 11;
+	int cursor_y = 0;
 
 	while (true) {
 		for (size_t i = MAX_COLUMNS * start_line; i < MAX_COLUMNS * wsize.ws_row; i++) {
@@ -81,27 +81,27 @@ int main(int argc, char* argv[]) {
 
 		refresh();
 
-		move(select_y, select_x);
+		move(cursor_y, cursor_x);
 
 		char c = getch();
 
 		if (c == 'q') {
 			break;
 		} else if (c == KEYBOARD_UP) {
-			if (select_y > 0) {
-				select_y--;
+			if (cursor_y > 0) {
+				cursor_y--;
 			}
 		} else if (c == KEYBOARD_DOWN) {
-			if (select_y < wsize.ws_row) {
-				select_y++;
+			if (cursor_y < wsize.ws_row) {
+				cursor_y++;
 			}
 		} else if (c == KEYBOARD_LEFT) {
-			if (select_x > 11) {
-				select_x -= 3;
+			if (cursor_x > 11) {
+				cursor_x -= 3;
 			}
 		} else if (c == KEYBOARD_RIGHT) {
-			if (select_x < MAX_COLUMNS * 3 + 7) {
-				select_x += 3;
+			if (cursor_x < MAX_COLUMNS * 3 + 7) {
+				cursor_x += 3;
 			}
 		}
 	}
