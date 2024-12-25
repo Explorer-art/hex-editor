@@ -1,11 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <ncurses.h>
 
+#define WIDTH 100
+#define HEIGHT 50
+#define MAX_LINES 20
 #define MAX_COLUMNS 16
 
 int is_ascii(unsigned char c) {
-    return (c >= 32 && c <= 127);
+    return (c >= 32 && c <= 126);
 }
 
 int main(int argc, char* argv[]) {
@@ -26,40 +30,46 @@ int main(int argc, char* argv[]) {
 	fseek(fp, 0, SEEK_SET);
 
 	unsigned char* data = (unsigned char*) malloc(size);
-	unsigned char* data_ptr = data;
 
 	fread(data, 1, size, fp);
 
-	for (size_t i = 0; i < size; i++) {
-		if (i % MAX_COLUMNS == 0) {
-			printf("%08X: ", i + MAX_COLUMNS);
+	initscr();
+	cbreak();
+	noecho();
+
+	int start_line = 0;
+	int x, y;
+
+	for (size_t i = MAX_COLUMNS * start_line; i < MAX_COLUMNS * MAX_LINES; i++) {
+		x = i % MAX_COLUMNS;
+		y = i / MAX_COLUMNS;
+
+		if (x == 0) {
+			mvprintw(y, x, "%08X: ", i + MAX_COLUMNS);
 		}
 
-		printf("%02X ", *data_ptr);
-		data_ptr++;
+		mvprintw(y, x * 3 + 10, "%02X", data[i]);
 
-		if (i % MAX_COLUMNS == MAX_COLUMNS - 1) {
-			unsigned char* c = data_ptr - MAX_COLUMNS;
+		if (x == MAX_COLUMNS - 1) {
+			int c = 0;
 
-			printf(" ");
-
-			for (int i = 0; i < MAX_COLUMNS; i++) {
-				if (is_ascii(*c)) {
-					printf("%c", *c);
+			for (size_t j = i - (MAX_COLUMNS - 1); j <= i; j++) {
+				if (is_ascii(data[j])) {
+					mvprintw(y, x * 3 + 14 + c, "%c", data[j]);
 				} else {
-					printf(".");
+					mvprintw(y, x * 3 + 14 + c, ".");
 				}
 
 				c++;
 			}
-
-			printf("\n");
 		}
 	}
 
-	free(data);
+	refresh();
+	getch();
 
-	printf("\n");
+	free(data);
+	endwin();
 
 	return 0;
 }
