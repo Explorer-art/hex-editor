@@ -2,10 +2,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <ncurses.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
 
-#define WIDTH 100
-#define HEIGHT 50
-#define MAX_LINES 20
 #define MAX_COLUMNS 16
 
 int is_ascii(unsigned char c) {
@@ -33,6 +32,9 @@ int main(int argc, char* argv[]) {
 
 	fread(data, 1, size, fp);
 
+	struct winsize wsize;
+	ioctl(STDOUT_FILENO, TIOCGWINSZ, &wsize);
+
 	initscr();
 	cbreak();
 	noecho();
@@ -40,7 +42,7 @@ int main(int argc, char* argv[]) {
 	int start_line = 0;
 	int x, y;
 
-	for (size_t i = MAX_COLUMNS * start_line; i < MAX_COLUMNS * MAX_LINES; i++) {
+	for (size_t i = wsize.ws_col * start_line; i < MAX_COLUMNS * wsize.ws_row; i++) {
 		x = i % MAX_COLUMNS;
 		y = i / MAX_COLUMNS;
 
@@ -51,16 +53,16 @@ int main(int argc, char* argv[]) {
 		mvprintw(y, x * 3 + 10, "%02X", data[i]);
 
 		if (x == MAX_COLUMNS - 1) {
-			int c = 0;
+			int offset = x * 3 + 14;
 
 			for (size_t j = i - (MAX_COLUMNS - 1); j <= i; j++) {
 				if (is_ascii(data[j])) {
-					mvprintw(y, x * 3 + 14 + c, "%c", data[j]);
+					mvprintw(y, offset, "%c", data[j]);
 				} else {
-					mvprintw(y, x * 3 + 14 + c, ".");
+					mvprintw(y, offset, ".");
 				}
 
-				c++;
+				offset++;
 			}
 		}
 	}
