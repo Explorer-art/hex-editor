@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <ncurses.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
@@ -42,33 +43,40 @@ int main(int argc, char* argv[]) {
 	int start_line = 0;
 	int x, y;
 
-	for (size_t i = wsize.ws_col * start_line; i < MAX_COLUMNS * wsize.ws_row; i++) {
-		x = i % MAX_COLUMNS;
-		y = i / MAX_COLUMNS;
+	while (true) {
+		for (size_t i = wsize.ws_col * start_line; i < MAX_COLUMNS * wsize.ws_row; i++) {
+			x = i % MAX_COLUMNS;
+			y = i / MAX_COLUMNS;
 
-		if (x == 0) {
-			mvprintw(y, x, "%08X: ", i + MAX_COLUMNS);
-		}
+			if (x == 0) {
+				mvprintw(y, x, "%08X: ", i + MAX_COLUMNS);
+			}
 
-		mvprintw(y, x * 3 + 10, "%02X", data[i]);
+			mvprintw(y, x * 3 + 10, "%02X", data[i]);
 
-		if (x == MAX_COLUMNS - 1) {
-			int offset = x * 3 + 14;
+			if (x == MAX_COLUMNS - 1) {
+				int offset = x * 3 + 14;
 
-			for (size_t j = i - (MAX_COLUMNS - 1); j <= i; j++) {
-				if (is_ascii(data[j])) {
-					mvprintw(y, offset, "%c", data[j]);
-				} else {
-					mvprintw(y, offset, ".");
+				for (size_t j = i - (MAX_COLUMNS - 1); j <= i; j++) {
+					if (is_ascii(data[j])) {
+						mvprintw(y, offset, "%c", data[j]);
+					} else {
+						mvprintw(y, offset, ".");
+					}
+
+					offset++;
 				}
-
-				offset++;
 			}
 		}
-	}
 
-	refresh();
-	getch();
+		refresh();
+
+		char c = getch();
+
+		if (c == 'q') {
+			break;
+		}
+	}
 
 	free(data);
 	endwin();
