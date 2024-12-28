@@ -5,6 +5,7 @@
 #include <ncurses.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
+#include <math.h>
 
 #define MAX_COLUMNS 16
 #define KEYBOARD_UP 3
@@ -40,9 +41,6 @@ int main(int argc, char* argv[]) {
 	struct winsize wsize;
 	ioctl(STDOUT_FILENO, TIOCGWINSZ, &wsize);
 
-	printf("Width: %d\n", wsize.ws_row);
-	printf("Height: %d\n", wsize.ws_col);
-
 	initscr();
 	cbreak();
 	noecho();
@@ -54,9 +52,11 @@ int main(int argc, char* argv[]) {
 	int cursor_y = 0;
 
 	while (true) {
-		for (size_t i = MAX_COLUMNS * start_line; i < MAX_COLUMNS * wsize.ws_row; i++) {
+		clear();
+
+		for (size_t i = MAX_COLUMNS * start_line; i < (start_line + wsize.ws_row) * MAX_COLUMNS && i < size; i++) {
 			x = i % MAX_COLUMNS;
-			y = i / MAX_COLUMNS;
+			y = i / MAX_COLUMNS - start_line;
 
 			if (x == 0) {
 				mvprintw(y, x, "%08X: ", i + MAX_COLUMNS);
@@ -90,21 +90,37 @@ int main(int argc, char* argv[]) {
 		} else if (c == KEYBOARD_UP) {
 			if (cursor_y > 0) {
 				cursor_y--;
+			} else {
+				if (start_line > 0) {
+					start_line--;
+				}
 			}
 		} else if (c == KEYBOARD_DOWN) {
-			if (cursor_y < wsize.ws_row) {
-				cursor_y++;
+			if (start_line + wsize.ws_row < size / MAX_COLUMNS) {
+				if (cursor_y < wsize.ws_row - 1) {
+					cursor_y++;
+				} else {
+					start_line++;
+				}
 			}
 		} else if (c == KEYBOARD_LEFT) {
 			if (cursor_x > 11) {
 				cursor_x -= 3;
 			}
 		} else if (c == KEYBOARD_RIGHT) {
-			if (cursor_x < MAX_COLUMNS * 3 + 7) {
-				cursor_x += 3;
+			if (size + 7 < MAX_COLUMNS * 3 + 7) {
+				if (cursor_x < size * 3 + 7) {
+					cursor_x += 3;
+				}
+			} else {
+					if (cursor_x < MAX_COLUMNS * 3 + 7) {
+					cursor_x += 3;
+				}
 			}
 		}
 	}
+
+	printf("%d", round(size / MAX_COLUMNS));
 
 	free(data);
 	endwin();
