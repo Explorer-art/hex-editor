@@ -13,8 +13,34 @@
 #define KEYBOARD_LEFT 4
 #define KEYBOARD_RIGHT 5
 
+size_t size = 0;
+int start_line = 0;
+int cursor_x = 11;
+int cursor_y = 0;
+struct winsize wsize;
+
 int is_ascii(unsigned char c) {
     return (c >= 32 && c <= 126);
+}
+
+void scroll_up() {
+	if (cursor_y > 0) {
+		cursor_y--;
+	} else {
+		if (start_line > 0) {
+			start_line--;
+		}
+	}
+}
+
+void scroll_down() {
+	if (start_line + wsize.ws_row < size / MAX_COLUMNS) {
+		if (cursor_y < wsize.ws_row - 1) {
+			cursor_y++;
+		} else {
+			start_line++;
+		}
+	}
 }
 
 int main(int argc, char* argv[]) {
@@ -31,14 +57,13 @@ int main(int argc, char* argv[]) {
 	}
 
 	fseek(fp, 0, SEEK_END);
-	size_t size = ftell(fp);
+	size = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
 
 	unsigned char* data = (unsigned char*) malloc(size);
 
 	fread(data, 1, size, fp);
 
-	struct winsize wsize;
 	ioctl(STDOUT_FILENO, TIOCGWINSZ, &wsize);
 
 	initscr();
@@ -46,10 +71,7 @@ int main(int argc, char* argv[]) {
 	noecho();
 	keypad(stdscr, TRUE);
 
-	int start_line = 0;
 	int x, y;
-	int cursor_x = 11;
-	int cursor_y = 0;
 
 	while (true) {
 		clear();
@@ -88,33 +110,27 @@ int main(int argc, char* argv[]) {
 		if (c == 'q') {
 			break;
 		} else if (c == KEYBOARD_UP) {
-			if (cursor_y > 0) {
-				cursor_y--;
-			} else {
-				if (start_line > 0) {
-					start_line--;
-				}
-			}
+			scroll_up();
 		} else if (c == KEYBOARD_DOWN) {
-			if (start_line + wsize.ws_row < size / MAX_COLUMNS) {
-				if (cursor_y < wsize.ws_row - 1) {
-					cursor_y++;
-				} else {
-					start_line++;
-				}
-			}
+			scroll_down();
 		} else if (c == KEYBOARD_LEFT) {
 			if (cursor_x > 11) {
 				cursor_x -= 3;
+			} else {
+				scroll_up();
+				cursor_x = MAX_COLUMNS * 3 + 8;
 			}
 		} else if (c == KEYBOARD_RIGHT) {
-			if (size + 7 < MAX_COLUMNS * 3 + 7) {
+			if (size + 7 < MAX_COLUMNS * 3 + 8) {
 				if (cursor_x < size * 3 + 7) {
 					cursor_x += 3;
 				}
 			} else {
-					if (cursor_x < MAX_COLUMNS * 3 + 7) {
+				if (cursor_x < MAX_COLUMNS * 3 + 8) {
 					cursor_x += 3;
+				} else {
+					scroll_down();
+					cursor_x = 11;
 				}
 			}
 		}
