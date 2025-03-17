@@ -2,11 +2,13 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 #include <ncurses.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <math.h>
 
+#define VERSION "0.1"
 #define MAX_COLUMNS 16
 #define KEYBOARD_UP 3
 #define KEYBOARD_DOWN 2
@@ -45,8 +47,13 @@ void scroll_down() {
 
 int main(int argc, char* argv[]) {
 	if (argc < 2) {
-		printf("Usage: %s [file name]\n", argv[0]);
+		printf("Usage: %s [file]\n", argv[0]);
 		exit(1);
+	}
+
+	if (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0) {
+		printf("Version: HEX Editor %s\n", VERSION);
+		exit(0);
 	}
 
 	FILE* fp = fopen(argv[1], "rb");
@@ -116,12 +123,12 @@ int main(int argc, char* argv[]) {
 		} else if (c == KEYBOARD_LEFT) {
 			if (cursor_x > 11) {
 				cursor_x -= 3;
-			} else {
+			} else if (cursor_y != 0) {
 				scroll_up();
 				cursor_x = MAX_COLUMNS * 3 + 8;
 			}
 		} else if (c == KEYBOARD_RIGHT) {
-			if (size + 7 < MAX_COLUMNS * 3 + 8) {
+			if (cursor_x < (size % MAX_COLUMNS) * 3 + 10) {
 				if (cursor_x < size * 3 + 7) {
 					cursor_x += 3;
 				}
@@ -135,8 +142,6 @@ int main(int argc, char* argv[]) {
 			}
 		}
 	}
-
-	printf("%d", round(size / MAX_COLUMNS));
 
 	free(data);
 	endwin();
