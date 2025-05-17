@@ -149,7 +149,7 @@ int main(int argc, char* argv[]) {
 	while (true) {
 		clear();
 
-		mvprintw(0, 100, "%d", current_byte);
+		mvprintw(0, 100, "Current byte: %d", current_byte);
 
 		for (size_t i = MAX_COLUMNS * start_line; i < (start_line + wsize.ws_row) * MAX_COLUMNS && i < size; i++) {
 			x = i % MAX_COLUMNS;
