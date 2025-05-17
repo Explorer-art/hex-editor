@@ -29,7 +29,7 @@ int is_ascii(unsigned char c) {
     return (c >= 32 && c <= 126);
 }
 
-void scroll_up() {
+void scroll_up(void) {
 	// Проверка для доп. безопасности
 	if (current_byte < MAX_COLUMNS) return;
 
@@ -42,7 +42,7 @@ void scroll_up() {
 	}
 }
 
-void scroll_down() {
+void scroll_down(void) {
 	// Проверка для доп. безопасности
 	if (current_byte + MAX_COLUMNS >= size) return;
 
@@ -58,7 +58,7 @@ void scroll_down() {
 	}
 }
 
-void scroll_left() {
+void scroll_left(void) {
 	// Проверка для доп. безопасности
 	if (current_byte == 0) return;
 
@@ -76,7 +76,7 @@ void scroll_left() {
 	}
 }
 
-void scroll_right() {
+void scroll_right(void) {
 	// Проверка для доп. безопасности
 	if (current_byte + 1 >= size) return;
 
