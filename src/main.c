@@ -7,8 +7,6 @@
 #include <sys/ioctl.h>
 #include <math.h>
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <errno.h>
 #include "config.h"
 
@@ -23,6 +21,7 @@ size_t size = 0;
 int start_line = 0;
 int cursor_x = 11;
 int cursor_y = 0;
+int current_byte = 0;
 struct winsize wsize;
 Configuration config;
 
@@ -31,22 +30,71 @@ int is_ascii(unsigned char c) {
 }
 
 void scroll_up() {
-	if (cursor_y > 0) {
+	// Проверка для доп. безопасности
+	if (current_byte < MAX_COLUMNS) return;
+
+	if (cursor_y > 0) { // Прыгаем вверх если y > 0
 		cursor_y--;
-	} else {
-		if (start_line > 0) {
-			start_line--;
-		}
+		current_byte -= MAX_COLUMNS;
+	} else if (start_line > 0) { // Прыгаем вверх если сверху есть ещё строка
+		start_line--;
+		current_byte -= MAX_COLUMNS;
 	}
 }
 
 void scroll_down() {
+	// Проверка для доп. безопасности
+	if (current_byte + MAX_COLUMNS >= size) return;
+
+	// Прыгаем вниз если есть строка
 	if (start_line + wsize.ws_row < size / MAX_COLUMNS) {
 		if (cursor_y < wsize.ws_row - 1) {
 			cursor_y++;
+			current_byte += MAX_COLUMNS;
 		} else {
 			start_line++;
+			current_byte += MAX_COLUMNS;
 		}
+	}
+}
+
+void scroll_left() {
+	// Проверка для доп. безопасности
+	if (current_byte == 0) return;
+
+	if (cursor_x > 11) { // Перемещаемся влево если это не конец строки
+		cursor_x -= 3;
+		current_byte--;
+	} else if (cursor_y > 0) { // Перемещаемся вверх и вправо если y > 0
+		cursor_y--;
+		current_byte--;
+		cursor_x = MAX_COLUMNS * 3 + 8;
+	} else if (start_line > 0) { // Перемещаемся вверх и вправо если сверху есть ещё строка
+		start_line--;
+		current_byte--;
+		cursor_x = MAX_COLUMNS * 3 + 8;
+	}
+}
+
+void scroll_right() {
+	// Проверка для доп. безопасности
+	if (current_byte + 1 >= size) return;
+
+	if (cursor_x < MAX_COLUMNS * 3 + 8) { // Перемещаемся вправо если x < макс. столбцов
+		if (cursor_x < size * 3 + 7) {
+			cursor_x += 3;
+			current_byte++;
+		}
+	} else if (start_line + wsize.ws_row < size / MAX_COLUMNS) { // Перемещаемся вниз и влево если снизу есть строка
+		if (cursor_y < wsize.ws_row - 1) {
+			cursor_y++;
+			current_byte++;
+		} else {
+			start_line++;
+			current_byte++;
+		}
+
+		cursor_x = 11;
 	}
 }
 
@@ -101,6 +149,8 @@ int main(int argc, char* argv[]) {
 	while (true) {
 		clear();
 
+		mvprintw(0, 100, "%d", current_byte);
+
 		for (size_t i = MAX_COLUMNS * start_line; i < (start_line + wsize.ws_row) * MAX_COLUMNS && i < size; i++) {
 			x = i % MAX_COLUMNS;
 			y = i / MAX_COLUMNS - start_line;
@@ -139,25 +189,9 @@ int main(int argc, char* argv[]) {
 		} else if (c == KEYBOARD_DOWN) {
 			scroll_down();
 		} else if (c == KEYBOARD_LEFT) {
-			if (cursor_x > 11) {
-				cursor_x -= 3;
-			} else if (cursor_y != 0) {
-				scroll_up();
-				cursor_x = MAX_COLUMNS * 3 + 8;
-			}
+			scroll_left();
 		} else if (c == KEYBOARD_RIGHT) {
-			if (cursor_x < (size % MAX_COLUMNS) * 3 + 10) {
-				if (cursor_x < size * 3 + 7) {
-					cursor_x += 3;
-				}
-			} else {
-				if (cursor_x < MAX_COLUMNS * 3 + 8) {
-					cursor_x += 3;
-				} else {
-					scroll_down();
-					cursor_x = 11;
-				}
-			}
+			scroll_right();
 		}
 	}
 
