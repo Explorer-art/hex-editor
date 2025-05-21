@@ -14,11 +14,15 @@ static int config_handler(void* user, const char* section, const char* name, con
 
 	#define MATCH(s, n) strcmp(section, s) == 0 && strcmp(name, n) == 0
 
-	if (MATCH("settings", "use_colors")) {
+	if (MATCH("general", "default_mode")) {
+		pconfig->default_mode = atoi(value);
+	} else if (MATCH("general", "octets")) {
+		pconfig->octets = atoi(value);
+	} else if (MATCH("general", "use_colors")) {
 		pconfig->use_colors = (strcmp(value, "true") == 0);
-	} else if (MATCH("settings", "fg_color")) {
+	} else if (MATCH("general", "fg_color")) {
 		pconfig->fg_color = atoi(value);
-	} else if (MATCH("settings", "bg_color")) {
+	} else if (MATCH("general", "bg_color")) {
 		pconfig->bg_color = atoi(value);
 	} else {
 		return 0;
@@ -65,7 +69,9 @@ void init_config(Configuration* config) {
 			exit(1);
 		}
 
-		fputs("[settings]\n", fp);
+		fputs("[general]\n", fp);
+		fputs("default_mode = 0\n", fp);
+		fputs("octets = 1\n", fp);
 		fputs("use_colors = false\n", fp);
 		fputs("fg_color = 7\n", fp);
 		fputs("bg_color = 0\n", fp);
