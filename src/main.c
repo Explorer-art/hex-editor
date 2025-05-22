@@ -1,6 +1,6 @@
 /*
 ================================================
-HEX Editor v0.1
+Hexed v0.2
 Author: Truzme_ (https://github.com/Explorer-art)
 
 Change log:
@@ -31,7 +31,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	if (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0) {
-		printf("Version: HEX Editor %s\n", VERSION);
+		printf("Version: Hexed %s\n", VERSION);
 		return 0;
 	}
 

@@ -1,9 +1,9 @@
 SRC_DIR = "src"
 
-all: clean hex-editor
+all: clean hexed
 
-hex-editor:
+hexed:
 	gcc -lncurses src/main.c src/core/hexed.c src/config/config.c src/utils/ini.c src/utils/utils.c -o $@ -I src/include -lncurses
 
 clean:
-	rm -f hex-editor
+	rm -f hexed
