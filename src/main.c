@@ -10,6 +10,7 @@ v0.1:
 v0.2:
 - Read and insert modes
 - Basic HEX editor
+- Code refact
 ================================================
 */
 
