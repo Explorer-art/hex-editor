@@ -1,6 +1,7 @@
 #pragma once
 
-#include "modes.h"
+#include <stdbool.h>
+#include <modes/modes.h>
 
 typedef struct {
 	Mode default_mode;
@@ -10,4 +11,5 @@ typedef struct {
 	int bg_color;
 } Configuration;
 
-void init_config(Configuration* config);
+Configuration* config_init(void);
+Configuration* get_config(void);

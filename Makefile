@@ -3,7 +3,7 @@ SRC_DIR = "src"
 all: clean hex-editor
 
 hex-editor:
-	gcc -lncurses $(SRC_DIR)/main.c $(SRC_DIR)/config.c $(SRC_DIR)/utils/ini.c -o $@ -lncurses
+	gcc -lncurses src/main.c src/core/hexed.c src/config/config.c src/utils/ini.c src/utils/utils.c -o $@ -I src/include -lncurses
 
 clean:
 	rm -f hex-editor

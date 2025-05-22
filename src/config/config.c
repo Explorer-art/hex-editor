@@ -6,8 +6,10 @@
 #include <sys/stat.h>
 #include <linux/limits.h>
 #include <errno.h>
-#include "config.h"
-#include "utils/ini.h"
+#include <config/config.h>
+#include <utils/ini.h>
+
+static Configuration config;
 
 static int config_handler(void* user, const char* section, const char* name, const char* value) {
 	Configuration* pconfig = (Configuration*)user;
@@ -31,7 +33,7 @@ static int config_handler(void* user, const char* section, const char* name, con
 	return 1;
 }
 
-void init_config(Configuration* config) {
+Configuration* config_init() {
 	char config_home[PATH_MAX];
 
 	const char* xdg = getenv("XDG_CONFIG_HOME");
@@ -55,6 +57,7 @@ void init_config(Configuration* config) {
 	if (stat(config_dir_path, &st) == -1) {
 		if (mkdir(config_dir_path, 0700) == -1) {
 			perror("Error creating directory");
+			exit(1);
 		}
 	}
 
@@ -79,8 +82,14 @@ void init_config(Configuration* config) {
 		fclose(fp);
 	}
 
-	if (ini_parse(config_path, config_handler, config) < 0) {
+	if (ini_parse(config_path, config_handler, &config) < 0) {
 		perror("Error load config.ini");
 		exit(1);
 	}
+
+	return &config;
+}
+
+Configuration* get_config(void) {
+	return &config;
 }
