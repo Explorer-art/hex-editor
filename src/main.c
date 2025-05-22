@@ -22,24 +22,22 @@ v0.2:
 
 #define VERSION 		"0.2"
 
-Hexed* hexed = NULL;
-
 int main(int argc, char* argv[]) {
 	config_init();
 
 	if (argc < 2) {
 		printf("Usage: %s [file]\n", argv[0]);
-		exit(1);
+		return 1;
 	}
 
 	if (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0) {
 		printf("Version: HEX Editor %s\n", VERSION);
-		exit(0);
+		return 0;
 	}
 
-	hexed = hexed_init();
+	Hexed* hexed = hexed_init();
 
-	hexed_open(argv[1]);
+	hexed_open(hexed, argv[1]);
 
 	// Основной цикл
 	for (;;) {
@@ -47,7 +45,7 @@ int main(int argc, char* argv[]) {
 
 		mvprintw(0, 100, "Current byte: %d", hexed->current_byte);
 
-		render();
+		render(hexed);
 		refresh();
 
 		move(hexed->cursor_y, hexed->cursor_x);
@@ -57,7 +55,7 @@ int main(int argc, char* argv[]) {
 		if (c == 'q') {
 			break;
 		} else if (c == 'i') {
-			if (hexed->mode == 0) {
+			if (hexed->mode == READ_MODE) {
 				hexed->mode = INSERT_MODE;
 			} else {
 				hexed->mode = READ_MODE;
@@ -65,12 +63,13 @@ int main(int argc, char* argv[]) {
 		}
 
 		if (hexed->mode == READ_MODE) {
-			read_mode_event_handler(c);
+			read_mode_event_handler(hexed, c);
 		} else if (hexed->mode == INSERT_MODE) {
-			insert_mode_event_handler(c);
+			insert_mode_event_handler(hexed, c);
 		}
 	}
 
+	hexed_close(hexed, hexed->fp);
 	hexed_exit();
 
 	return 0;
