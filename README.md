@@ -1,3 +1,3 @@
-# Hex Editor
+# Hexed
 
-Simple HEX editor (for now viewer)
+Hexed - simple HEX editor (for now viewer)
