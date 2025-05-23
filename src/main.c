@@ -32,24 +32,24 @@ int main(int argc, char* argv[]) {
 	}
 
 	if (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0) {
-		printf("Version: Hexed %s\n", VERSION);
+		printf("Version: %s\n", VERSION);
 		return 0;
 	}
 
 	Hexed* hexed = hexed_init();
 
-	hexed_open(hexed, argv[1]);
+	int file_index = hexed_open(hexed, argv[1]);
 
 	// Основной цикл
 	for (;;) {
 		clear();
 
-		mvprintw(0, 100, "Current byte: %d", hexed->current_byte);
+		mvprintw(0, 100, "Current byte: %d", hexed->files[file_index].current_byte);
 
-		render(hexed);
+		render(hexed, file_index);
 		refresh();
 
-		move(hexed->cursor_y, hexed->cursor_x);
+		move(hexed->files[file_index].cursor_y, hexed->files[file_index].cursor_x);
 
 		char c = getch();
 
@@ -64,14 +64,14 @@ int main(int argc, char* argv[]) {
 		}
 
 		if (hexed->mode == READ_MODE) {
-			read_mode_event_handler(hexed, c);
+			read_mode_event_handler(hexed, file_index, c);
 		} else if (hexed->mode == INSERT_MODE) {
-			insert_mode_event_handler(hexed, c);
+			insert_mode_event_handler(hexed, file_index, c);
 		}
 	}
 
-	hexed_close(hexed, hexed->fp);
-	hexed_exit();
+	hexed_close(hexed, file_index);
+	hexed_exit(hexed);
 
 	return 0;
 }
