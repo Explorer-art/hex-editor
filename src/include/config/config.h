@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
-#include <modes/modes.h>
+#include <modes.h>
 
 typedef struct {
 	Mode default_mode;

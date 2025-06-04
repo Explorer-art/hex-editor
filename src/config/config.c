@@ -45,12 +45,16 @@ Configuration* config_init() {
 	} else if (home && *home) {
 		snprintf(config_home, sizeof(config_home), "%s/.config", home);
 	} else {
-		perror("Error config init");
+		fprintf(stderr, "Error config init");
 		exit(1);
 	}
 
 	char config_dir_path[PATH_MAX];
-	snprintf(config_dir_path, sizeof(config_dir_path), "%s/hex-editor", config_home);
+
+	if (snprintf(config_dir_path, sizeof(config_dir_path), "%s/hexed", config_home) >= sizeof(config_dir_path)) {
+		fprintf(stderr, "Error: config_dir_path too long\n");
+		exit(1);
+	}
 
 	struct stat st = {0};
 
@@ -62,7 +66,11 @@ Configuration* config_init() {
 	}
 
 	char config_path[PATH_MAX];
-	snprintf(config_path, sizeof(config_path), "%s/config.ini", config_dir_path);
+
+	if (snprintf(config_path, sizeof(config_path), "%s/config.ini", config_dir_path) >= sizeof(config_path)) {
+		fprintf(stderr, "Error: config_path too long\n");
+		exit(1);
+	}
 
 	if (stat(config_path, &st) == -1) {
 		FILE* fp = fopen(config_path, "w");

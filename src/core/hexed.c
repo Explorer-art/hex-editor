@@ -10,90 +10,103 @@
 #include <core/hexed.h>
 #include <utils/utils.h>
 
-#define MAX_COLUMNS 	16
-#define KEYBOARD_UP 	3
-#define KEYBOARD_DOWN 	2
-#define KEYBOARD_LEFT 	4
-#define KEYBOARD_RIGHT 	5
-#define KEYBOARD_BACK	7
-
 static Hexed hexed;
 
-void scroll_up(Hexed* hexed, int file_index) {
-	// Проверка для доп. безопасности
-	if (hexed->files[file_index].current_byte < MAX_COLUMNS) return;
+void move_up(Hexed* hexed, int file_index) {
+	HexedFile* file = &hexed->files[file_index];
 
-	if (hexed->files[file_index].cursor_y > 0) { // Прыгаем вверх если y > 0
-		hexed->files[file_index].cursor_y--;
-		hexed->files[file_index].current_byte -= MAX_COLUMNS;
-	} else if (hexed->files[file_index].start_line > 0) { // Прыгаем вверх если сверху есть ещё строка
-		hexed->files[file_index].start_line--;
-		hexed->files[file_index].current_byte -= MAX_COLUMNS;
+	// Проверка для доп. безопасности
+	if (file->current_byte < MAX_COLUMNS) return;
+
+	if (file->cursor_y > 0) { // Прыгаем вверх если y > 0
+		file->cursor_y--;
+		file->current_byte -= MAX_COLUMNS;
+	} else if (file->start_line > 0) { // Прыгаем вверх если сверху есть ещё строка
+		file->start_line--;
+		file->current_byte -= MAX_COLUMNS;
 	}
 }
 
-void scroll_down(Hexed* hexed, int file_index) {
+void move_down(Hexed* hexed, int file_index) {
+	HexedFile* file = &hexed->files[file_index];
+
 	// Проверка для доп. безопасности
-	if (hexed->files[file_index].current_byte + MAX_COLUMNS >= hexed->files[file_index].size) return;
+	if (file->current_byte + MAX_COLUMNS >= hexed->files[file_index].size) return;
 
 	// Прыгаем вниз если есть строка
-	if (hexed->files[file_index].start_line + hexed->wsize.ws_row - 1 < hexed->files[file_index].size / MAX_COLUMNS) {
-		if (hexed->files[file_index].cursor_y < hexed->wsize.ws_row - 2) { // -2 потому что у нас 1 строчка внизу занята под информацию
-			hexed->files[file_index].cursor_y++;
-			hexed->files[file_index].current_byte += MAX_COLUMNS;
+	if (file->start_line + hexed->wsize.ws_row - 1 < file->size / MAX_COLUMNS) {
+		if (file->cursor_y < hexed->wsize.ws_row - 2) { // -2 потому что у нас 1 строчка внизу занята под информацию
+			file->cursor_y++;
+			file->current_byte += MAX_COLUMNS;
 		} else {
-			hexed->files[file_index].start_line++;
-			hexed->files[file_index].current_byte += MAX_COLUMNS;
+			file->start_line++;
+			file->current_byte += MAX_COLUMNS;
 		}
 	}
 }
 
-void scroll_left(Hexed* hexed, int file_index) {
-	// Проверка для доп. безопасности
-	if (hexed->files[file_index].current_byte == 0) return;
+void move_left(Hexed* hexed, int file_index) {
+	HexedFile* file = &hexed->files[file_index];
 
-	if (hexed->files[file_index].cursor_x > 12) { // Перемещаемся влево если это не конец строки
-		hexed->files[file_index].cursor_x -= 3;
-		hexed->files[file_index].current_byte--;
-	} else if (hexed->files[file_index].cursor_y > 0) { // Перемещаемся вверх и вправо если y > 0
-		hexed->files[file_index].cursor_y--;
-		hexed->files[file_index].current_byte--;
-		hexed->files[file_index].cursor_x = MAX_COLUMNS * 3 + 8;
-	} else if (hexed->files[file_index].start_line > 0) { // Перемещаемся вверх и вправо если сверху есть ещё строка
-		hexed->files[file_index].start_line--;
-		hexed->files[file_index].current_byte--;
-		hexed->files[file_index].cursor_x = MAX_COLUMNS * 3 + 8;
+	// Проверка для доп. безопасности
+	if (file->current_byte == 0) return;
+
+	if (file->cursor_x > 12) { // Перемещаемся влево если это не конец строки
+		int x = file->current_byte % MAX_COLUMNS;
+		int group_size = (hexed->config->octets <= 1) ? 0 : (MAX_COLUMNS / hexed->config->octets);
+		int space = (group_size > 0) ? (x / group_size) : 0;
+
+		file->cursor_x -= 3 + space;
+		file->current_byte--;
+	} else if (file->cursor_y > 0) { // Перемещаемся вверх и вправо если y > 0
+		file->cursor_y--;
+		file->current_byte--;
+		file->cursor_x = MAX_COLUMNS * 3 + 8;
+	} else if (file->start_line > 0) { // Перемещаемся вверх и вправо если сверху есть ещё строка
+		file->start_line--;
+		file->current_byte--;
+		file->cursor_x = MAX_COLUMNS * 3 + 8;
 	}
 }
 
-void scroll_right(Hexed* hexed, int file_index) {
+void move_right(Hexed* hexed, int file_index) {
+	HexedFile* file = &hexed->files[file_index];
+
 	// Проверка для доп. безопасности
-	if (hexed->files[file_index].current_byte + 1 >= hexed->files[file_index].size) return;
+	if (file->current_byte + 1 >= hexed->files[file_index].size) return;
 
-	if (hexed->files[file_index].cursor_x < MAX_COLUMNS * 3 + 8) { // Перемещаемся вправо если x < макс. столбцов
-		if (hexed->files[file_index].cursor_x < hexed->files[file_index].size * 3 + 7) {
-			hexed->files[file_index].cursor_x += 3;
-			hexed->files[file_index].current_byte++;
+	if (file->cursor_x < MAX_COLUMNS * 3 + 8) { // Перемещаемся вправо если x < макс. столбцов
+		if (file->cursor_x < hexed->files[file_index].size * 3 + 7) {
+			int x = file->current_byte % MAX_COLUMNS;
+			int group_size = (hexed->config->octets <= 1) ? 0 : (MAX_COLUMNS / hexed->config->octets);
+			int space = (group_size > 0) ? (x / group_size) : 0;
+
+			file->cursor_x += 3 + space;
+			file->current_byte++;
 		}
-	} else if (hexed->files[file_index].start_line + hexed->wsize.ws_row < hexed->files[file_index].size / MAX_COLUMNS) { // Перемещаемся вниз и влево если снизу есть строка
-		if (hexed->files[file_index].cursor_y < hexed->wsize.ws_row - 1) {
-			hexed->files[file_index].cursor_y++;
-			hexed->files[file_index].current_byte++;
+	} else if (file->start_line + hexed->wsize.ws_row < file->size / MAX_COLUMNS) { // Перемещаемся вниз и влево если снизу есть строка
+		if (file->cursor_y < hexed->wsize.ws_row - 1) {
+			file->cursor_y++;
+			file->current_byte++;
 		} else {
-			hexed->files[file_index].start_line++;
-			hexed->files[file_index].current_byte++;
+			file->start_line++;
+			file->current_byte++;
 		}
 
-		hexed->files[file_index].cursor_x = 11;
+		file->cursor_x = 11;
 	}
 }
 
 void render(Hexed* hexed, int file_index) {
-	int x, y;
+	HexedFile* file = &hexed->files[file_index];
 
-	for (size_t i = MAX_COLUMNS * hexed->files[file_index].start_line; i < (hexed->files[file_index].start_line + hexed->wsize.ws_row - 1) * MAX_COLUMNS && i < hexed->files[file_index].size; i++) {
+	int x, y;
+	int start = MAX_COLUMNS * file->start_line;
+	int end = (file->start_line + hexed->wsize.ws_row - 1) * MAX_COLUMNS;
+
+	for (size_t i = start; i < end && i < file->size; i++) {
 		x = i % MAX_COLUMNS;
-		y = i / MAX_COLUMNS - hexed->files[file_index].start_line;
+		y = i / MAX_COLUMNS - file->start_line;
 
 		int group_size = (hexed->config->octets <= 1) ? 0 : (MAX_COLUMNS / hexed->config->octets);
 		int space = (group_size > 0) ? (x / group_size) : 0;
@@ -102,20 +115,12 @@ void render(Hexed* hexed, int file_index) {
 		if (x == 0)
 			mvprintw(y, x, "%08lX: ", i + MAX_COLUMNS);
 
-		mvprintw(y, offset, "%02X", hexed->files[file_index].data[i]);
+		mvprintw(y, offset, "%02X", file->data[i]);
 
-		if (x == MAX_COLUMNS - 1) {
-			int offset = x * 3 + 15 + space;
-
-			for (size_t j = i - (MAX_COLUMNS - 1); j <= i; j++) {
-				if (is_ascii(hexed->files[file_index].data[j])) {
-					mvprintw(y, offset, "%c", hexed->files[file_index].data[j]);
-				} else {
-					mvprintw(y, offset, ".");
-				}
-
-				offset++;
-			}
+		if (is_ascii(file->data[i])) {
+			mvprintw(y, MAX_COLUMNS * 3 + 15 + x, "%c", file->data[i]);
+		} else {
+			mvprintw(y, MAX_COLUMNS * 3 + 15 + x, ".");
 		}
 	}
 
@@ -127,39 +132,41 @@ void render(Hexed* hexed, int file_index) {
 
 void read_mode_event_handler(Hexed* hexed, int file_index, char c) {
 	if (c == KEYBOARD_UP) {
-		scroll_up(hexed, file_index);
+		move_up(hexed, file_index);
 	} else if (c == KEYBOARD_DOWN) {
-		scroll_down(hexed, file_index);
+		move_down(hexed, file_index);
 	} else if (c == KEYBOARD_LEFT) {
-		scroll_left(hexed, file_index);
+		move_left(hexed, file_index);
 	} else if (c == KEYBOARD_RIGHT) {
-		scroll_right(hexed, file_index);
+		move_right(hexed, file_index);
 	}
 }
 
 void insert_mode_event_handler(Hexed* hexed, int file_index, char c) {
-	if ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f') || c == KEYBOARD_BACK) {
-		snprintf(hexed->files[file_index].value_buffer, sizeof(hexed->files[file_index].value_buffer), "%02X", hexed->files[file_index].data[hexed->files[file_index].current_byte]);
+	HexedFile* file = &hexed->files[file_index];
 
-		hexed->files[file_index].value_buffer[0] = hexed->files[file_index].value_buffer[1];
+	if ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f') || c == KEYBOARD_BACK) {
+		snprintf(file->value_buffer, sizeof(file->value_buffer), "%02X", file->data[file->current_byte]);
+
+		file->value_buffer[0] = file->value_buffer[1];
 
 		if (c == KEYBOARD_BACK) {
-			hexed->files[file_index].value_buffer[1] = '0';
+			file->value_buffer[1] = '0';
 		} else {
-			hexed->files[file_index].value_buffer[1] = c;
+			file->value_buffer[1] = c;
 		}
 
 		int value = 0;
-		sscanf(hexed->files[file_index].value_buffer, "%x", &value);
-		hexed->files[file_index].data[hexed->files[file_index].current_byte] = value;
+		sscanf(file->value_buffer, "%x", &value);
+		file->data[file->current_byte] = value;
 	} else if (c == KEYBOARD_UP) {
-		scroll_up(hexed, file_index);
+		move_up(hexed, file_index);
 	} else if (c == KEYBOARD_DOWN) {
-		scroll_down(hexed, file_index);
+		move_down(hexed, file_index);
 	} else if (c == KEYBOARD_LEFT) {
-		scroll_left(hexed, file_index);
+		move_left(hexed, file_index);
 	} else if (c == KEYBOARD_RIGHT) {
-		scroll_right(hexed, file_index);
+		move_right(hexed, file_index);
 	}
 }
 
@@ -187,7 +194,7 @@ Hexed* hexed_init(void) {
 }
 
 int hexed_open(Hexed* hexed, char* filename) {
-	FILE* fp = fopen(filename, "rb");
+	FILE* fp = fopen(filename, "r+b");
 
 	if (fp == NULL) {
 		fprintf(stderr, "Error opening file %s: %s\n", filename, strerror(errno));
@@ -210,7 +217,7 @@ int hexed_open(Hexed* hexed, char* filename) {
 		.fp = fp,
 		.size = size,
 		.start_line = 0,
-		.cursor_x = 11,
+		.cursor_x = 12,
 		.cursor_y = 0,
 		.current_byte = 0,
 		.value_buffer = {0},
@@ -218,22 +225,30 @@ int hexed_open(Hexed* hexed, char* filename) {
 	};
 
 	hexed->files[hexed->files_count] = new_file;
-
 	hexed->files_count++;
 
 	return hexed->files_count - 1;
 }
 
-void hexed_close(Hexed* hexed, int file_index) {
-	free(hexed->files[file_index].data);
-	fclose(hexed->files[file_index].fp);
+void hexed_save(Hexed* hexed, int file_index) {
+	HexedFile* file = &hexed->files[file_index];
 
+	fseek(file->fp, 0, SEEK_SET);
+	fwrite(file->data, 1, file->size, file->fp);
+}
+
+void hexed_close(Hexed* hexed, int file_index) {
+	HexedFile* file = &hexed->files[file_index];
+
+	free(file->data);
+	fclose(file->fp);
+
+	// Удаляем структуру из массива
 	for (int i = file_index; i < hexed->files_count; i++) {
 		hexed->files[i] = hexed->files[i + 1];
 	}
 
 	hexed->files = realloc(hexed->files, hexed->files_count * sizeof(HexedFile));
-
 	hexed->files_count--;
 }
 

@@ -37,7 +37,6 @@ int main(int argc, char* argv[]) {
 	}
 
 	Hexed* hexed = hexed_init();
-
 	int file_index = hexed_open(hexed, argv[1]);
 
 	// Основной цикл
@@ -61,6 +60,8 @@ int main(int argc, char* argv[]) {
 			} else {
 				hexed->mode = READ_MODE;
 			}
+		} else if (c == 's') {
+			hexed_save(hexed, file_index);
 		}
 
 		if (hexed->mode == READ_MODE) {
